@@ -1,7 +1,7 @@
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import pearsonr
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
 
 income_df = pd.read_csv('data/BG_Median_Household_Income.csv', dtype=str)
 
@@ -9,49 +9,43 @@ access_df = pd.read_csv('data/BG_Accessibility.csv',  dtype=str)
 access_df = access_df[['Name', 'OriginID', 'Total_PublicTransitTime', 'Shape_Length']]
 access_df['Name'] = access_df['Name'].str.split(' - ').str[0]
 
+population_df = pd.read_csv('data/BG_Population.csv',  dtype=str)
+population_df = population_df[['Name', 'Population']]
+population_df['Name'] = population_df['Name'].str.split(' - ').str[0]
+
 merged_df = pd.merge(access_df, income_df, left_on='Name', right_on='Name', how='inner')
+merged_df = pd.merge(merged_df, population_df, left_on='Name', right_on='Name', how='inner')
+
 
 plot_df = merged_df.dropna(subset=['Median_Household_Income', 'Total_PublicTransitTime']) 
 plot_df['Median_Household_Income'] = pd.to_numeric(plot_df['Median_Household_Income'], errors='coerce')
 plot_df['Median_Household_Income'] = plot_df['Median_Household_Income'] / 1000
 plot_df['Total_PublicTransitTime'] = pd.to_numeric(plot_df['Total_PublicTransitTime'], errors='coerce')
+plot_df['Population'] = pd.to_numeric(plot_df['Total_PublicTransitTime'], errors='coerce')
 
-clean = plot_df[['Median_Household_Income','Total_PublicTransitTime']].replace([np.inf, -np.inf], np.nan).dropna()
-x_clean = clean['Median_Household_Income']
-y_clean = clean['Total_PublicTransitTime']
+clean = plot_df[['Median_Household_Income','Total_PublicTransitTime', 'Population']].replace([np.inf, -np.inf], np.nan).dropna()
 
-print("N samples:", len(x_clean))
 
-alpha = 0.05
-r, p = pearsonr(x_clean, y_clean)
-print(f"Pearson r = {r:.3f}, p-value = {p:.3e}")
+x = clean['Median_Household_Income'].values
+y = clean['Total_PublicTransitTime'].values
+w = clean['Population'].values  
 
-if p < alpha:
-    r2 = r**2
-    r2_percentage = r2 * 100
-    print(
-        f"There is a statistically significant correlation between the median household income of a block group "
-        f"and its travel time to San Jose State University via public transportation. "
-        f"{r2_percentage:.3f}% of the variance in travel time can be explained by median household income."
-    )
-else:
-    print("There is no statistically significant correlation between the median household income of a block group.")
+X = sm.add_constant(x)
 
-x = np.array(x_clean)
-y = np.array(y_clean)
+wls_mod = sm.WLS(y, X, weights=w).fit()
 
-# 1) Compute slope (m) and intercept (b) of the best‐fit line y = m·x + b
-m, b = np.polyfit(x, y, 1)
+print(wls_mod.summary())
 
-# 2) Plot scatter + regression line
+import matplotlib.pyplot as plt
+m, b = wls_mod.params[1], wls_mod.params[0]
+
 plt.figure(figsize=(8,6))
-plt.scatter(x, y, alpha=0.6, label="Data points")
-# Create a smooth x‐axis for the line
+plt.scatter(x, y, alpha=0.6, label="Block Group")
 x_line = np.linspace(x.min(), x.max(), 100)
-plt.plot(x_line, m*x_line + b, label=f"Fit: y = {m:.3f}x + {b:.0f}", linewidth=2)
-
+plt.plot(x_line, m*x_line + b,
+         label=f"Fit: y = {m:.3f}x + {b:.0f}", linewidth=2)
 plt.xlabel("Median Household Income (Thousands of Dollars)")
 plt.ylabel("Commute Time (min)")
-plt.title("Linear Regression (NumPy polyfit)")
+plt.title("WLS Regression (block‐group weights)")
 plt.legend()
 plt.show()
