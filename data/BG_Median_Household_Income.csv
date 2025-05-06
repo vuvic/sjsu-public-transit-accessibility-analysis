@@ -1,4 +1,4 @@
-﻿GEO_ID,name,median_household_income,margin_of_error
+﻿GEO_ID,Name,Median_Household_Income,Margin_Of_Error
 1500000US060855001001,Block Group 1; Census Tract 5001; Santa Clara County; California,98712,50634
 1500000US060855001002,Block Group 2; Census Tract 5001; Santa Clara County; California,123456,94710
 1500000US060855001003,Block Group 3; Census Tract 5001; Santa Clara County; California,103137,97663

@@ -9,16 +9,15 @@ access_df = pd.read_csv('data/BG_Accessibility.csv',  dtype=str)
 access_df = access_df[['Name', 'OriginID', 'Total_PublicTransitTime', 'Shape_Length']]
 access_df['Name'] = access_df['Name'].str.split(' - ').str[0]
 
-merged_df = pd.merge(access_df, income_df, left_on='Name', right_on='name', how='inner')
-merged_df = merged_df.drop(columns=['name']) 
+merged_df = pd.merge(access_df, income_df, left_on='Name', right_on='Name', how='inner')
 
-plot_df = merged_df.dropna(subset=['median_household_income', 'Total_PublicTransitTime']) 
-plot_df['median_household_income'] = pd.to_numeric(plot_df['median_household_income'], errors='coerce')
-plot_df['median_household_income'] = plot_df['median_household_income'] / 1000
+plot_df = merged_df.dropna(subset=['Median_Household_Income', 'Total_PublicTransitTime']) 
+plot_df['Median_Household_Income'] = pd.to_numeric(plot_df['Median_Household_Income'], errors='coerce')
+plot_df['Median_Household_Income'] = plot_df['Median_Household_Income'] / 1000
 plot_df['Total_PublicTransitTime'] = pd.to_numeric(plot_df['Total_PublicTransitTime'], errors='coerce')
 
-clean = plot_df[['median_household_income','Total_PublicTransitTime']].replace([np.inf, -np.inf], np.nan).dropna()
-x_clean = clean['median_household_income']
+clean = plot_df[['Median_Household_Income','Total_PublicTransitTime']].replace([np.inf, -np.inf], np.nan).dropna()
+x_clean = clean['Median_Household_Income']
 y_clean = clean['Total_PublicTransitTime']
 
 print("N samples:", len(x_clean))
